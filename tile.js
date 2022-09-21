@@ -32,13 +32,16 @@ class Cell {
 
     // collapses this Cell, returns false when there are no options for this cell and we've hit a "contradiction"
     Collapse() {
+        if (this.options.length == 0) {
+            // if we couldn't find an option, that means we've found a 
+            // contradiction, which means one of our "guesses" must have been wrong
+            // we need to backtrack/start over in this case
+            return false;
+        }
         this.collapsed = true;
         // pick from possible tile variations
         const pickedOptionIdx = int(random(this.options.length));
         const pickedOption = this.options[pickedOptionIdx];
-        if (pickedOption === undefined) {
-            return false;
-        }
         // "picking an option" just means making the options list only contain that one
         this.options = [pickedOption];
         // this tells us what tile variation to use to draw this.
@@ -77,8 +80,8 @@ class TileVariation {
         this.edges = edges; // array that signifies which "edges" this tile can connect to
         // EX: if this is a blank single-color square, all edges might be 0
         // if this is something that looks like a tetris T block facing down, the top edge might be 0
-        // while the other 3 sides might be 1. The connection "keys" are arbitrarily generated
-        // since they are only ever compared to each other
+        // while the other 3 sides might be 1. The connection "keys" are arbitrary since they are 
+        // only ever compared to each other.
 
         this.numRotations = 0;
         this.up = [];
@@ -122,7 +125,6 @@ class TileVariation {
     analyze(tileVariations) {
         for (let i = 0; i < tileVariations.length; i++) {
             let tileVariation = tileVariations[i];
-
             // UP
             if (compatibleEdges(tileVariation.edges[DOWN], this.edges[UP])) {
                 this.up.push(i);
