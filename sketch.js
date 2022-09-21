@@ -1,9 +1,10 @@
 
-// https://discourse.processing.org/t/wave-collapse-function-algorithm-in-processing/12983
-
-
-const DIMENSION = 25;
-const CANVAS_DIMENSION = 600;
+// actual screen size of the grid we draw to
+const CANVAS_SIZE = 600;
+// dimension of the grid we solve
+let DIMENSION = 15;
+// whether our wfc solver is done or not
+let isDone = false;
 
 function sleep(sleepDuration){
     var now = new Date().getTime();
@@ -15,23 +16,53 @@ let tileVariations = [];
 // flat array that holds the actual values of each part of our grid that can be updated/rendered
 let grid = [];
 
-const backgroundCol = 0;
-const emptyTileCol = 24;
+const backgroundCol = 0; // single number = greyscale val
+const emptyTileCol = 51;
+// base pos of our WFC grid on screen
+const baseWFCGridPos = [0, 30];
+// base pos of WFC dimension slider
+const baseWFCDimensionSlider = [140, 0];
+
+// reference to the slider that holds the user's desired grid dimensions
+let dimensionSlider;
+
+// number of times we've restarted to solve this grid
+let numSolveAttemps = 1;
 
 function setup() {
     //randomSeed(99);
 
-    createCanvas(CANVAS_DIMENSION, CANVAS_DIMENSION);
+    let button = createButton('Click to Regenerate');
+    button.position(0, 0);
+    button.mousePressed(OnRegenGridClicked);
+    dimensionSlider = createSlider(2, 30, 15, 1);
+    dimensionSlider.position(baseWFCDimensionSlider[0], baseWFCDimensionSlider[1]);
+    DIMENSION = dimensionSlider.value();
+    
+    let canvas = createCanvas(CANVAS_SIZE, CANVAS_SIZE);
+    canvas.position(baseWFCGridPos[0], baseWFCGridPos[1]);
     background(backgroundCol);
-    //noStroke();
 
     initTiles();
+
+}
+
+function OnRegenGridClicked() {
+    numSolveAttemps = 1;
+    DIMENSION = dimensionSlider.value();
+    resetGrid();
 }
 
 // called once-per-frame
 function draw() {
     updateWFC();
     render();
+
+    push();
+    textSize(15);
+    fill(255, 255, 255, 255);
+    text("Number of attempts to solve: " + numSolveAttemps, 0, 10);
+    pop();
 }
 
 function InitBaseTileVariations() {
@@ -78,10 +109,11 @@ function initTiles() {
         tileVariation.analyze(tileVariations);
     }
 
-    initGrid();
+    resetGrid();
 }
 
-function initGrid() {
+function resetGrid() {
+    isDone = false;
     // initialize grid with Cell's that only hold their possible options
     // passing in just this length here will initialize the Cell's options field
     // to hold all possible options (max entropy)
@@ -95,8 +127,6 @@ function initGrid() {
     }
 }
 
-
-let isDone = false;
 
 function render() {
     background(backgroundCol);
@@ -156,7 +186,8 @@ function updateWFC() {
         // if we "cant" collapse, either backtrack or start over
         // TODO: is this right?
         console.log("Found contradiction! Need to backtrack or restart...");
-        initGrid();
+        numSolveAttemps++;
+        resetGrid();
         return;
     }
 
